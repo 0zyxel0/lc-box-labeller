@@ -206,7 +206,7 @@ const submitForm = async () => {
 			Comments: newItem.value.comments,
 			"Box Type": newItem.value.boxType,
 			Assets: imageResult ? imageResult : null, // Include uploaded image info if available
-			publicurl: `${useRequestURL().hostname}/view/?qid=${genId}`,
+			publicurl: `${useRequestURL().hostname}/viewer/?qid=${genId}`,
 			publicid: genId,
 		};
 		const response = await fetch(`${NOCODB_BASEURL}/tables/mndechcrzo8xna3/records`, {

@@ -22,6 +22,8 @@ RUN yarn install
 ENV NODE_ENV=production
 ENV NITRO_PORT=3000
 ENV NITRO_HOST=0.0.0.0
+ENV NOCODB_BASEURL=https://app.nocodb.com/api/v2
+ENV NOCODB_APIKEY=zz6oKWFVoptzjM8F2U38d4PT1igsPL6uNoT_w8DF
 
 # Build the production Version of the Application
 RUN yarn build
