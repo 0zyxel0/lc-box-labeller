@@ -8,10 +8,10 @@
 				<v-main>
 					<v-container>
 						<!-- Tabs -->
-						<v-tabs v-model="activeTab" grow>
-							<v-tab value="0">Create New List</v-tab>
-							<v-tab value="1">Scan QR Code</v-tab>
-						</v-tabs>
+						<!-- <v-tabs v-model="activeTab" grow>
+							<v-tab value="0">Create New List</v-tab> -->
+							<!-- <v-tab value="1">Scan QR Code</v-tab> -->
+						<!-- </v-tabs> -->
 
 						<v-tabs-window v-model="activeTab">
 							<!-- Tab 1: Create New List -->
@@ -51,7 +51,7 @@
 								</v-form>
 							</v-tabs-window-item>
 							<!-- Tab 2: QR Code Scanner -->
-							<v-tabs-window-item :value="1">
+							<!-- <v-tabs-window-item :value="1">
 								<v-card flat>
 									<v-card-text>
 										<video ref="videoElem" style="width: 100%"></video>
@@ -75,7 +75,7 @@
 
 								<v-alert v-if="qrResult" type="success" class="mt-3">QR Code found: {{ qrResult }}</v-alert>
 								<v-alert v-if="qrError" type="error" class="mt-3">{{ qrError }}</v-alert>
-							</v-tabs-window-item>
+							</v-tabs-window-item> -->
 						</v-tabs-window>
 					</v-container>
 				</v-main>
