@@ -7,12 +7,6 @@
 				</v-app-bar>
 				<v-main>
 					<v-container>
-						<!-- Tabs -->
-						<!-- <v-tabs v-model="activeTab" grow>
-							<v-tab value="0">Create New List</v-tab> -->
-							<!-- <v-tab value="1">Scan QR Code</v-tab> -->
-						<!-- </v-tabs> -->
-
 						<v-tabs-window v-model="activeTab">
 							<!-- Tab 1: Create New List -->
 							<v-tabs-window-item :value="0">
@@ -50,32 +44,6 @@
 									</div>
 								</v-form>
 							</v-tabs-window-item>
-							<!-- Tab 2: QR Code Scanner -->
-							<!-- <v-tabs-window-item :value="1">
-								<v-card flat>
-									<v-card-text>
-										<video ref="videoElem" style="width: 100%"></video>
-										<div v-if="scanResult" class="mt-4">
-											<h3>Decoded QR Code:</h3>
-											<p>{{ scanResult }}</p>
-										</div>
-									</v-card-text>
-								</v-card>
-								<v-btn v-if="scanStarted == false" @click="startScan" size="x-large" color="primary" class="mt-4" block>Start Scanning</v-btn>
-								<v-btn v-else @click="stopScan" size="x-large" block color="error">Stop Scanning</v-btn>
-								<v-card v-if="nocodbData" class="mt-3">
-									<v-card-title>QR Code Data</v-card-title>
-									<v-card-text>
-										<p><strong>Title:</strong> {{ nocodbData.title }}</p>
-										<p><strong>Contents:</strong> {{ nocodbData.contents }}</p>
-										<p><strong>Comments:</strong> {{ nocodbData.comments }}</p>
-										<p><strong>Box Type:</strong> {{ nocodbData.boxType }}</p>
-									</v-card-text>
-								</v-card>
-
-								<v-alert v-if="qrResult" type="success" class="mt-3">QR Code found: {{ qrResult }}</v-alert>
-								<v-alert v-if="qrError" type="error" class="mt-3">{{ qrError }}</v-alert>
-							</v-tabs-window-item> -->
 						</v-tabs-window>
 					</v-container>
 				</v-main>
@@ -86,38 +54,30 @@
 
 <script setup>
 const config = useRuntimeConfig();
-import { ref } from "vue";
-import QrScanner from "qr-scanner";
-import { v4 as uuidv4 } from "uuid";
+import { ref, watchEffect, onMounted } from "vue";
 import { EditorContent, useEditor } from "@tiptap/vue-3";
 import StarterKit from "@tiptap/starter-kit";
 import axios from "axios";
+import { v4 as uuidv4 } from "uuid";
+import nuxtStorage from "nuxt-storage";
 const NOCODB_BASEURL = config.public.NOCODB_BASEURL;
 const NOCODB_APIKEY = config.public.NOCODB_APIKEY;
-const scanStarted = ref(false);
 const activeTab = ref(0);
-const qrResult = ref(null);
-const qrError = ref(null);
-const nocodbData = ref(null);
 const newItem = ref({
-	title: "",
-	contents: "",
-	comments: "",
+	title: null,
+	contents: null,
+	comments: null,
 	boxType: null,
 	publicid: null,
 });
 const boxTypes = ["Kitchen", "Living Room", "Shoes", "Keller", "Others", "Computer Parts", "Food", "Clothes", "Dining", "Carina Room", "Calvin Room"];
-const videoElem = ref(null);
-const scanResult = ref("");
-let qrScanner = null; // Declare the QR scanner instance here
 const loading = ref(false); // For showing the loader
 const imagePreview = ref(null); // To hold the image preview URL
 const imageFile = ref(null); // To hold the image file
 
 // editor's content
-const content = ref(`<p>Edit Contents of Box Here</p>`);
 const editor = useEditor({
-	content: content.value,
+	content: newItem.value.contents,
 	extensions: [StarterKit.configure({ history: false })],
 });
 
@@ -127,47 +87,62 @@ const toggleBold = () => {
 		editor.value.chain().focus().toggleBold().run();
 	}
 };
-
 const toggleItalic = () => {
 	if (editor.value) {
 		editor.value.chain().focus().toggleItalic().run();
 	}
 };
-
 const toggleBulletList = () => {
 	if (editor.value) {
 		editor.value.chain().focus().toggleBulletList().run();
 	}
 };
 
-async function startScan() {
-	scanStarted.value = true;
-	if (!videoElem.value) return;
+// Function to save form data in localStorage
+const saveToLocalStorage = () => {
+	nuxtStorage.localStorage.setData("newItem", JSON.stringify(newItem.value));
+};
 
-	qrScanner = new QrScanner(
-		videoElem.value,
-		(result) => {
-			console.log("decoded qr code:", result);
-			scanResult.value = result; // Store the result to display it
-			qrScanner.stop(); // Stop scanning after a successful read
-		},
-		{
-			highlightScanRegion: true,
-			highlightCodeOutline: true,
-			returnDetailedScanResult: true,
+// Function to load form data from localStorage
+const loadFromLocalStorage = () => {
+	const savedItem = nuxtStorage.localStorage.getData("newItem");
+	if (savedItem) {
+		Object.assign(newItem.value, JSON.parse(savedItem));
+		if (newItem.value.contents && editor.value) {
+			editor.value.commands.setContent(newItem.value.contents);
 		}
-	);
-
-	qrScanner.start(); // Start scanning
-}
-
-async function stopScan() {
-	if (qrScanner) {
-		qrScanner.stop(); // Stop scanning
-		scanStarted.value = false;
+	} else {
+		nuxtStorage.localStorage.setData("newItem", JSON.stringify(newItem.value));
 	}
-}
+};
 
+// Watch the form data and save it to localStorage whenever it changes
+
+watch(
+	newItem,
+	(newVal, oldVal) =>{
+    saveToLocalStorage(); // Save to localStorage whenever there's a change
+  },
+  { deep: true }
+);
+// Editor update function
+const updateEditorContents = () => {
+  newItem.value.contents = editor.value.getHTML(); // Manually update contents field
+};
+
+// Set a listener for editor content changes
+watchEffect(() => {
+  if (editor.value) {
+    editor.value.on('update', updateEditorContents);
+  }
+});
+
+// Load data from localStorage when the component is mounted
+onMounted(() => {
+	loadFromLocalStorage();
+});
+
+// File handling
 const handleFileChange = (event) => {
 	const file = event.target.files[0];
 	if (file) {
@@ -219,11 +194,16 @@ const submitForm = async () => {
 		});
 
 		const data = await response.json();
-		alert("New list created successfully");
+		// console.log(data);
+		alert(`Successfully Created Box Record ID - ${data.Id}`);
 
-		newItem.value = { title: "", contents: "", comments: "", boxType: null, publicid: null, publicurl: null}; // Clear the form fields
-		imagePreview.value = null; // Clear the image preview
-		imageFile.value = null; // Clear the image file
+		// Clear form and localStorage after successful submission
+		newItem.value = { title: "", contents: "", comments: "", boxType: null, publicid: null, publicurl: null };
+		imagePreview.value = null;
+		imageFile.value = null;
+		nuxtStorage.localStorage.removeItem("newItem"); // Clear localStorage
+		// Reset editor content
+		editor.value.commands.setContent(""); // Clear the editor
 	} catch (error) {
 		console.error("Error creating list:", error);
 		alert("Error submitting form");

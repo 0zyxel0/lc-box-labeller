@@ -17,6 +17,7 @@
     "element-tiptap": "^2.2.1",
     "form-data": "^4.0.0",
     "nuxt": "^3.13.0",
+    "nuxt-storage": "^1.2.2",
     "qr-scanner": "^1.4.2",
     "qrcode.vue": "^3.4.1",
     "uuid": "^10.0.0",
