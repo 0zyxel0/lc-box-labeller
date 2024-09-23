@@ -11,18 +11,22 @@
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
+    "@pinia/nuxt": "^0.5.4",
     "@tiptap/starter-kit": "^2.7.2",
     "@tiptap/vue-3": "^2.7.2",
     "axios": "^1.7.7",
+    "cookie-universal-nuxt": "^2.2.2",
     "element-tiptap": "^2.2.1",
     "form-data": "^4.0.0",
+    "js-cookie": "^3.0.5",
     "nuxt": "^3.13.0",
     "nuxt-storage": "^1.2.2",
+    "pinia": "^2.2.2",
     "qr-scanner": "^1.4.2",
     "qrcode.vue": "^3.4.1",
     "uuid": "^10.0.0",
-    "vue": "latest",
-    "vue-router": "latest"
+    "vue": "^3.4.19",
+    "vue-router": "^4.3.0"
   },
   "devDependencies": {
     "vite-plugin-vuetify": "^2.0.4",

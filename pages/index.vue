@@ -30,7 +30,7 @@
 										</v-card-text>
 									</v-card>
 									<!-- File Picker -->
-									<v-file-input label="Upload Image" @change="handleFileChange" accept="image/*"></v-file-input>
+									<v-file-input ref="fileInputRef" label="Upload Image" @change="handleFileChange" accept="image/*"></v-file-input>
 									<!-- Display Uploaded Image -->
 									<div v-if="imagePreview" class="mt-3">
 										<img :src="imagePreview" alt="Uploaded Image" style="max-width: 100%; height: auto" />
@@ -98,6 +98,27 @@ const toggleBulletList = () => {
 	}
 };
 
+// Function to load data from cookies and set config values
+const loadFromCookies = () => {
+	const cookies = parseCookies(document.cookie); // Get all cookies
+	if (cookies.myCookie) {
+		// Decode the cookie value first
+		const decodedCookie = decodeURIComponent(cookies.myCookie);
+		const cookieData = new URLSearchParams(decodedCookie); // Parse the cookie data
+
+		const baseUrl = cookieData.get("base");
+		const apiKey = cookieData.get("plk");
+
+		// Update your API constants
+		if (baseUrl) {
+			NOCODB_BASEURL.value = baseUrl; // Assuming you want to make it reactive
+		}
+		if (apiKey) {
+			NOCODB_APIKEY.value = apiKey; // Assuming you want to make it reactive
+		}
+	}
+};
+
 // Function to save form data in localStorage
 const saveToLocalStorage = () => {
 	nuxtStorage.localStorage.setData("newItem", JSON.stringify(newItem.value));
@@ -120,26 +141,27 @@ const loadFromLocalStorage = () => {
 
 watch(
 	newItem,
-	(newVal, oldVal) =>{
-    saveToLocalStorage(); // Save to localStorage whenever there's a change
-  },
-  { deep: true }
+	(newVal, oldVal) => {
+		saveToLocalStorage(); // Save to localStorage whenever there's a change
+	},
+	{ deep: true }
 );
 // Editor update function
 const updateEditorContents = () => {
-  newItem.value.contents = editor.value.getHTML(); // Manually update contents field
+	newItem.value.contents = editor.value.getHTML(); // Manually update contents field
 };
 
 // Set a listener for editor content changes
 watchEffect(() => {
-  if (editor.value) {
-    editor.value.on('update', updateEditorContents);
-  }
+	if (editor.value) {
+		editor.value.on("update", updateEditorContents);
+	}
 });
 
 // Load data from localStorage when the component is mounted
-onMounted(() => {
+onMounted(async () => {
 	loadFromLocalStorage();
+	await axios.get("/api/set-server-data");
 });
 
 // File handling
@@ -167,50 +189,67 @@ async function uploadImage(file) {
 
 // Function to handle form submission and save to database
 const submitForm = async () => {
-	loading.value = true; // Set loading to true
-	const editorContent = editor.value.getHTML(); // Get the HTML content from the editor
-	const genId = uuidv4();
-	try {
-		let imageResult = null;
-		if (imageFile.value) {
-			imageResult = await uploadImage(imageFile.value); // Upload image if present
-		}
-		const payload = {
-			Title: newItem.value.title,
-			Contents: editorContent, // Save the editor content as HTML
-			Comments: newItem.value.comments,
-			"Box Type": newItem.value.boxType,
-			Assets: imageResult ? imageResult : null, // Include uploaded image info if available
-			publicurl: `https://${useRequestURL().hostname}/viewer/?qid=${genId}`,
-			publicid: genId,
-		};
-		const response = await fetch(`${NOCODB_BASEURL}/tables/mndechcrzo8xna3/records`, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				"xc-token": NOCODB_APIKEY,
-			},
-			body: JSON.stringify(payload),
-		});
+  // Check if required fields are filled
+  if (!newItem.value.title) {
+    alert("Please enter a title.");
+    return;
+  }
+  if (!newItem.value.boxType) {
+    alert("Please select a box type.");
+    return;
+  }
+  const editorContent = editor.value.getHTML();
+  if (!editorContent || editorContent.trim() === "<p></p>") {
+    alert("Please enter some contents.");
+    return;
+  }
 
-		const data = await response.json();
-		// console.log(data);
-		alert(`Successfully Created Box Record ID - ${data.Id}`);
+  loading.value = true; // Set loading to true
+  const genId = uuidv4();
 
-		// Clear form and localStorage after successful submission
-		newItem.value = { title: "", contents: "", comments: "", boxType: null, publicid: null, publicurl: null };
-		imagePreview.value = null;
-		imageFile.value = null;
-		nuxtStorage.localStorage.removeItem("newItem"); // Clear localStorage
-		// Reset editor content
-		editor.value.commands.setContent(""); // Clear the editor
-	} catch (error) {
-		console.error("Error creating list:", error);
-		alert("Error submitting form");
-	} finally {
-		loading.value = false; // Set loading to false after submission
-	}
+  try {
+    let imageResult = null;
+    if (imageFile.value) {
+      imageResult = await uploadImage(imageFile.value); // Upload image if present
+    }
+    const payload = {
+      Title: newItem.value.title,
+      Contents: editorContent, // Save the editor content as HTML
+      Comments: newItem.value.comments,
+      "Box Type": newItem.value.boxType,
+      Assets: imageResult ? imageResult : null, // Include uploaded image info if available
+      publicurl: `https://${useRequestURL().hostname}/viewer/?qid=${genId}`,
+      publicid: genId,
+    };
+
+    const response = await fetch(`${NOCODB_BASEURL}/tables/mndechcrzo8xna3/records`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "xc-token": NOCODB_APIKEY,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+
+    // Clear form and localStorage after successful submission
+    newItem.value = { title: "", contents: "", comments: "", boxType: null, publicid: null, publicurl: null };
+    imagePreview.value = null;
+    imageFile.value = null;
+    nuxtStorage.localStorage.removeItem("newItem"); // Clear localStorage
+    editor.value.commands.setContent(""); // Clear the editor
+
+    alert(`Successfully Created Box Record ID - ${data.Id}`);
+    window.location.reload(); // Refresh the page to clear the form
+  } catch (error) {
+    console.error("Error creating list:", error);
+    alert("Error submitting form");
+  } finally {
+    loading.value = false; // Set loading to false after submission
+  }
 };
+
 </script>
 
 <style>

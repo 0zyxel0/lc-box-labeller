@@ -3,7 +3,7 @@ import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
 export default defineNuxtConfig({
   compatibilityDate: '2024-04-03',
   devtools: { enabled: true },
-  pages:true,
+  pages: true,
   build: {
     transpile: ['vuetify'],
   },
@@ -14,14 +14,13 @@ export default defineNuxtConfig({
         config.plugins.push(vuetify({ autoImport: true }))
       })
     },
-
+    '@pinia/nuxt',
   ],
   runtimeConfig: {
     public: {
       NOCODB_BASEURL: process.env.NOCODB_BASEURL,
-      NOCODB_APIKEY: process.env.NOCODB_APIKEY
-    }
-    
+      NOCODB_APIKEY: process.env.NOCODB_APIKEY,
+    },
   },
   vite: {
     vue: {
